@@ -2,69 +2,58 @@ package com.amigoscode;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Objects;
 
 @SpringBootApplication
 @RestController
+@RequestMapping("api/v1/customers")
 public class Main {
-    public static void main(String[] args) {
+    private final CustomerRepository customerRepository;
+
+    public Main(CustomerRepository customerRepository) {
+        this.customerRepository = customerRepository;
+    }
+
+    public static void main(String[] args)
+    {
         SpringApplication.run(Main.class, args);
     }
 
-    @GetMapping("/greet")
-    public GreetResponse greet() {
-        GreetResponse response = new GreetResponse(
-                "Hello",
-                List.of("Java", "C#", "Python"),
-                new Person(
-                        "Jason",
-                        28,
-                        300_000)
-        );
-        return response;
+    @GetMapping
+    public List<Customer> getCustomers() {
+        return customerRepository.findAll();
     }
 
-    record Person(String name, int age, double savings){}
-    record GreetResponse(
-            String greet,
-            List<String> favProgrammingLangs,
-            Person person){}
+    record NewRequestCustomer(
+            String name,
+            String email,
+            Integer age
+    ){}
 
-    //record GreetResponse(String greet){}
+    @PostMapping
+    public void addCustomer(@RequestBody NewRequestCustomer request){
+        Customer customer = new Customer();
+        customer.setName(request.name);
+        customer.setAge(request.age);
+        customerRepository.save(customer);
+    }
 
-//    class GreetResponse{
-//        private final String greet;
-//
-//        GreetResponse(String greet) {
-//            this.greet = greet;
-//        }
-//
-//        public String getGreet() {
-//            return greet;
-//        }
-//
-//        @Override
-//        public String toString() {
-//            return "GreetResponse{" +
-//                    "greet='" + greet + '\'' +
-//                    '}';
-//        }
-//
-//        @Override
-//        public boolean equals(Object o) {
-//            if (this == o) return true;
-//            if (o == null || getClass() != o.getClass()) return false;
-//            GreetResponse that = (GreetResponse) o;
-//            return Objects.equals(greet, that.greet);
-//        }
-//
-//        @Override
-//        public int hashCode() {
-//            return Objects.hash(greet);
-//        }
-//    }
+    @DeleteMapping("{customerID}")
+    public void deleteCustomer(@PathVariable("customerID") Integer Id){
+        customerRepository.deleteById(Id);
+    }
+
+    @PutMapping("{customerID}")
+    public void editCustomer(
+            @PathVariable("customerID") Integer Id,
+            @RequestBody NewRequestCustomer request
+    ){
+        Customer customer = customerRepository.getReferenceById(Id);
+        customer.setName(request.name);
+        customer.setAge(request.age);
+        customer.setEmail(request.email);
+        customerRepository.save(customer);
+    }
 }
